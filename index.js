@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.port || 3000;
 
@@ -29,24 +29,47 @@ async function run() {
   try {
     await client.connect();
 
-
-    const usersDB = client.db('usersDB');
+    const usersDB = client.db("usersDB");
     const usersCollection = usersDB.collection("pizzaMenu");
 
+    app.get("/users", async(req, res) => {
+      const cursor = usersCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+
+    app.get('/users/:id', async(req, res) => {
+      const id = req.params.id;
+      console.log('need user with id', id);
+      const query = {_id: new ObjectId(id)}
+      const result = await usersCollection.findOne(query)
+      res.send(result)
+    })
 
 
 
-    app.post("/users", async(req, res) => {
+
+    app.post("/users", async (req, res) => {
       const newUser = req.body;
       console.log("user info", newUser);
       const result = await usersCollection.insertOne(newUser);
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+      console.log(req.params.id);
+    });
 
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
+  } finally {
   }
 }
 run().catch(console.dir);
